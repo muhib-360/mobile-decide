@@ -1,0 +1,216 @@
+body {
+    font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #0a0a0a;
+    overflow: hidden;
+    color: #ffffff;
+}
+
+#particles-js {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+.header {
+    background: linear-gradient(90deg, #00ffff, #ff00ff);
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);
+    position: relative;
+    z-index: 1;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 2.5em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 30px;
+    background: rgba(10, 10, 10, 0.9);
+    border: 1px solid #00ffff;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.chatbot {
+    text-align: center;
+}
+
+.chatbot p {
+    font-size: 1.2em;
+    color: #d1d5db;
+    margin-bottom: 25px;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.input-group {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+#brand-select {
+    padding: 12px;
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    font-size: 1.1em;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    cursor: pointer;
+    transition: box-shadow 0.3s;
+}
+
+#brand-select:focus {
+    outline: none;
+    box-shadow: 0 0 10px #00ffff;
+    color: #00e0e0;
+    background: #0a0a0a;
+}
+
+#user-input {
+    width: 50%;
+    padding: 15px;
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    font-size: 1.1em;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transition: box-shadow 0.3s;
+}
+
+#user-input:focus {
+    outline: none;
+    box-shadow: 0 0 10px #00ffff;
+}
+
+button {
+    padding: 15px 30px;
+    background: linear-gradient(90deg, #00ffff, #ff00ff);
+    color: #0a0a0a;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 15px #ff00ff;
+}
+
+.response-message {
+    font-size: 1.3em;
+    color: #ffffff;
+    margin: 25px 0;
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 25px;
+}
+
+.card {
+    background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+    border: 2px solid #00ffff;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+    transition: transform 0.4s, box-shadow 0.4s;
+}
+
+.card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 0 25px rgba(255, 0, 255, 0.3);
+}
+
+.card-image {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid #ff00ff;
+    margin-bottom: 15px;
+}
+
+.card h3 {
+    margin: 0 0 15px;
+    font-size: 1.4em;
+    color: #00ffff;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.card p {
+    margin: 8px 0;
+    color: #d1d5db;
+    font-size: 1em;
+}
+
+.buy-now {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 12px 25px;
+    background: linear-gradient(90deg, #00ffff, #ff00ff);
+    color: #0a0a0a;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 1em;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: background 0.3s, transform 0.3s;
+}
+
+.buy-now:hover {
+    background: linear-gradient(90deg, #00e0e0, #e000e0);
+    transform: translateY(-2px);
+}
+
+.chart-container {
+    position: relative;
+    margin-top: 30px;
+    min-height: 200px;
+    display: block;
+}
+
+#scoreChart {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 400px;
+}
+
+@media (max-width: 600px) {
+    .input-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+    #user-input {
+        width: 100%;
+    }
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
