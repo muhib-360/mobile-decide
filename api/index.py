@@ -7,7 +7,7 @@ import re
 app = Flask(__name__)
 
 # Load dataset and clean numeric columns
-DATASET_PATH = '\antutu_priceoye_merged.csv'
+DATASET_PATH = os.path.join(os.path.dirname(__file__), "antutu_priceoye_merged.csv")
 try:
     df = pd.read_csv(DATASET_PATH)
     # Print columns for debugging
