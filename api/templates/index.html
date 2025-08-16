@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobileDecide</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="particles-js"></div>
+    <header class="header">
+        <h1>MobileDecide</h1>
+    </header>
+    <div class="container">
+        <div class="chatbot">
+            <p>Find your perfect phone! Select a brand and enter your budget/needs (e.g., 70k, gaming).</p>
+            <div class="input-group">
+                <select id="brand-select">
+                    <option value="">Any Brand</option>
+                    <option value="Samsung">Samsung</option>
+                    <option value="Apple">Apple</option>
+                    <option value="Xiaomi">Xiaomi</option>
+                    <option value="Oppo">Oppo</option>
+                    <option value="Vivo">Vivo</option>
+                    <option value="Realme">Realme</option>
+                    <option value="Huawei">Huawei</option>
+                    <option value="Nokia">Nokia</option>
+                    <option value="Tecno">Tecno</option>
+                </select>
+                <input type="text" id="user-input" placeholder="e.g., 70k, gaming">
+                <button onclick="sendMessage()">Find Phones</button>
+            </div>
+            <div id="response"></div>
+            <div class="chart-container">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Initialize particles.js
+        particlesJS('particles-js', {
+            "particles": {
+                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": ["#00ffff", "#ff00ff", "#ffffff"] },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.5, "random": true },
+                "size": { "value": 3, "random": true },
+                "line_linked": { "enable": true, "distance": 150, "color": "#00ffff", "opacity": 0.4 },
+                "move": { "enable": true, "speed": 2, "direction": "none", "random": true }
+            },
+            "interactivity": {
+                "events": { "onhover": { "enable": true, "mode": "repulse" } },
+                "modes": { "repulse": { "distance": 100 } }
+            }
+        });
+
+        let chartInstance = null;
+        async function sendMessage() {
+            const input = document.getElementById('user-input').value;
+            const brand = document.getElementById('brand-select').value;
+            const responseDiv = document.getElementById('response');
+            const chartContainer = document.querySelector('.chart-container');
+            if (!input && !brand) {
+                responseDiv.innerText = 'Please enter a query or select a brand.';
+                if (chartInstance) chartInstance.destroy();
+                chartContainer.style.display = 'none';
+                return;
+            }
+            responseDiv.innerText = 'Loading...';
+            if (chartInstance) chartInstance.destroy();
+            chartContainer.style.display = 'none';
+            try {
+                const response = await fetch('/recommend', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    body: JSON.stringify({ message: input, brand: brand || '' })
+                });
+                const data = await response.json();
+                console.log('Server response:', data);
+                if (data.error) {
+                    responseDiv.innerText = data.error;
+                    return;
+                }
+                // Render cards
+                let html = `<p class="response-message">${data.message}</p><div class="cards">`;
+                data.recommendations.forEach(phone => {
+                    html += `
+                        <div class="card">
+                            <img src="https://via.placeholder.com/150?text=${phone.Brand}+${phone.Model}" alt="${phone.Brand} ${phone.Model}" class="card-image">
+                            <h3>${phone.Brand} ${phone.Model}</h3>
+                            <p>Price: PKR ${phone.Price_PKR.toLocaleString()}</p>
+                            <p>${phone['Total Score'] ? `Score: ${phone['Total Score'].toLocaleString()}` : phone.Note || 'No score available'}</p>
+                            <p>${phone.Rating ? `Rating: ${phone.Rating}/5` : 'No rating available'}</p>
+                            ${phone.URL ? `<a href="${phone.URL}" target="_blank" class="buy-now">Buy Now</a>` : ''}
+                        </div>`;
+                });
+                html += '</div>';
+                responseDiv.innerHTML = html;
+
+                // Render chart after cards are rendered
+                chartContainer.style.display = 'block';
+                const ctx = document.getElementById('scoreChart').getContext('2d');
+                if (chartInstance) chartInstance.destroy();
+                const labels = data.recommendations.map(phone => `${phone.Brand} ${phone.Model}`);
+                const scores = data.recommendations.map(phone => phone['Total Score'] || phone.Rating || 0);
+                const isScore = data.recommendations.some(phone => phone['Total Score']);
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: isScore ? 'Total Score' : 'Rating',
+                            data: scores,
+                            backgroundColor: 'rgba(0, 255, 255, 0.7)', // Neon cyan
+                            borderColor: 'rgba(0, 191, 255, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeOutQuart'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: isScore ? 'Total Score' : 'Rating (out of 5)', font: { size: 14 } }
+                            },
+                            x: {
+                                ticks: { font: { size: 12 } }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: { 
+                                display: true, 
+                                text: isScore ? 'Performance Score Comparison' : 'Rating Comparison',
+                                font: { size: 16, weight: 'bold' }
+                            }
+                        }
+                    }
+                });
+                chartContainer.style.height = `${Math.max(200, labels.length * 50)}px`;
+            } catch (error) {
+                responseDiv.innerText = 'Error processing request: ' + error.message;
+                if (chartInstance) chartInstance.destroy();
+                chartContainer.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
