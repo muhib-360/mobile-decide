@@ -12,5 +12,9 @@
       "dest": "/api/index.py"
     }
   ],
-  "includeFiles": ["api/**"]
+  "functions": {
+    "api/index.py": {
+      "includeFiles": ["antutu_priceoye_merged.csv"]
+    }
+  }
 }
