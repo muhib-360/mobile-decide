@@ -3,10 +3,11 @@ import pandas as pd
 import os
 import spacy
 import re
+import subprocess
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# Load dataset with relative path to the api directory
+# Load dataset with relative path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATASET_PATH = os.path.join(BASE_DIR, 'antutu_priceoye_merged.csv')
 try:
@@ -17,30 +18,33 @@ try:
     if price_column in df.columns:
         df[price_column] = df[price_column].replace(r'[^\d.]', '', regex=True).astype(float)
     else:
-        raise KeyError(f"Price column '{price_column}' not found in dataset. Available columns: {list(df.columns)}")
+        raise KeyError(f"Price column '{price_column}' not found. Available columns: {list(df.columns)}")
     numeric_columns = ['Total Score', 'GPU Score', 'CPU Score', 'UX Score', 'Rating']
     for col in numeric_columns:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 except FileNotFoundError:
-    print(f"Error: {DATASET_PATH} not found. Check file location in api/ directory.")
+    print(f"Error: {DATASET_PATH} not found.")
     df = pd.DataFrame()
 except Exception as e:
     print(f"Error loading dataset: {str(e)}")
     df = pd.DataFrame()
 
-# Load spaCy model (ensure model is downloaded or handle error)
+# Load or download spaCy model
+nlp = None
 try:
     nlp = spacy.load('en_core_web_sm')
 except OSError:
-    print("spaCy model 'en_core_web_sm' not found. Download it using: python -m spacy download en_core_web_sm")
-    nlp = None  # Fallback to regex-only parsing
+    print("spaCy model 'en_core_web_sm' not found. Attempting to download...")
+    try:
+        subprocess.run(['python', '-m', 'spacy', 'download', 'en_core_web_sm'], check=True)
+        nlp = spacy.load('en_core_web_sm')
+    except (subprocess.CalledProcessError, Exception) as e:
+        print(f"Failed to download spaCy model: {str(e)}. Falling back to regex-only parsing.")
+        nlp = None
 
 def parse_query(query, brand=None):
-    """Parse user query to extract budget and use case."""
     doc = nlp(query.lower()) if nlp else None
-    
-    # Extract budget
     budget = None
     if doc:
         for ent in doc.ents:
@@ -49,21 +53,18 @@ def parse_query(query, brand=None):
                 match = re.search(r'(\d+\.?\d*)(k| thousand)?', text, re.IGNORECASE)
                 if match:
                     value = float(match.group(1))
-                    budget = int(value * 1000 if match.group(2) in ['k', ' thousand'] else value)
+                    budget = int(value * 1000 if match.group(2) in ['k', 'thousand'] else value)
     if budget is None:
         match = re.search(r'(\d+\.?\d*)(k| thousand)', query.lower())
         if match:
             value = float(match.group(1))
             budget = int(value * 1000)
-
-    # Extract use case
     use_case = 'balanced'
     everyday_keywords = ['everyday', 'daily', 'normal', 'regular', 'basic', 'standard', 'usual', 'casual', 'tasks', 'use']
     if any(word in query.lower() for word in ['performance', 'gaming']):
         use_case = 'performance'
     elif any(word in query.lower() for word in everyday_keywords):
         use_case = 'everyday'
-    
     return {'budget': budget or 50000, 'use_case': use_case, 'brand': brand}
 
 def get_recommendations(budget, use_case, brand=None):
@@ -72,11 +73,9 @@ def get_recommendations(budget, use_case, brand=None):
     price_column = 'Price_PKR'
     matched_df = df[(df[price_column] <= budget) & (df['Total Score'].notna())].copy()
     unmatched_df = df[(df[price_column] <= budget) & (df['Total Score'].isna())].copy()
-
     if brand and brand.lower() in df['Brand'].str.lower().values:
         matched_df = matched_df[matched_df['Brand'].str.lower() == brand.lower()]
         unmatched_df = unmatched_df[unmatched_df['Brand'].str.lower() == brand.lower()]
-
     if use_case == 'performance':
         matched_df.loc[:, 'Score'] = 0.6 * matched_df['GPU Score'] + 0.4 * matched_df['CPU Score']
         ranked_df = matched_df.sort_values(by='Score', ascending=False)
@@ -84,9 +83,7 @@ def get_recommendations(budget, use_case, brand=None):
         ranked_df = matched_df.sort_values(by='UX Score', ascending=False)
     else:
         ranked_df = matched_df.sort_values(by='Total Score', ascending=False)
-
     recommendations = ranked_df[['Brand', 'Model', price_column, 'Total Score', 'Rating', 'URL']].head(3).to_dict('records')
-
     if len(recommendations) < 3 and brand:
         fallback_df = unmatched_df.sort_values(by='Rating', ascending=False)
         for _, row in fallback_df.head(3 - len(recommendations)).iterrows():
@@ -99,14 +96,12 @@ def get_recommendations(budget, use_case, brand=None):
                 'URL': row['URL'],
                 'Note': 'Benchmark scores unavailable'
             })
-
     message = f"Here are the top {brand or 'phones'} under PKR {budget:,}"
     if use_case == 'performance':
         message += " for performance and gaming"
     elif use_case == 'everyday':
         message += " for everyday use"
     message += ":"
-
     return {'message': message, 'recommendations': recommendations}
 
 @app.route('/')
